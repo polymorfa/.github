@@ -1,0 +1,44 @@
+name: Refresh profile cards
+
+# Re-renders profile/cards once a day so star counts stay current.
+# GitHub serves the committed SVGs; nothing renders when someone opens the page.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-profile
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: render/package-lock.json
+      - run: npm ci
+        working-directory: render
+      - run: node profile.mjs ..
+        working-directory: render
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Commit only when the cards changed
+        run: |
+          git add -A profile
+          if git diff --cached --quiet; then
+            echo "Star counts unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh profile cards"
+          git push

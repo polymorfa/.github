@@ -1,0 +1,8 @@
+{
+  "name": "polymorfa-profile-cards",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "render": "node profile.mjs .." },
+  "dependencies": { "satori": "0.12.2", "lucide-static": "0.460.0" }
+}

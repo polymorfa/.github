@@ -1,0 +1,66 @@
+{
+  "polymorfa": {
+    "sdks": {
+      "stars": 0,
+      "lang": "TypeScript"
+    },
+    "cli": {
+      "stars": 1,
+      "lang": "TypeScript"
+    },
+    "integrations": {
+      "stars": 0,
+      "lang": "JavaScript"
+    },
+    "signal-node": {
+      "stars": 0,
+      "lang": "Rust"
+    },
+    "agent-kit": {
+      "stars": 0,
+      "lang": "Python"
+    },
+    "sdk-php": {
+      "stars": 0,
+      "lang": "PHP"
+    },
+    "hypermeow": {
+      "stars": 78,
+      "lang": "Go"
+    },
+    "cellar": {
+      "stars": 17,
+      "lang": "Rust"
+    },
+    "jigger": {
+      "stars": 3,
+      "lang": "TypeScript"
+    },
+    "sentinel-tests": {
+      "stars": 2,
+      "lang": "TypeScript"
+    },
+    "libsignal-protocol-go": {
+      "stars": 1,
+      "lang": "Go"
+    }
+  },
+  "maintained": {
+    "Baileys": {
+      "stars": 11653,
+      "lang": "JavaScript"
+    },
+    "whatsapp-web.js": {
+      "stars": 22923,
+      "lang": "JavaScript"
+    },
+    "whatsmeow": {
+      "stars": 7883,
+      "lang": "Go"
+    },
+    "whatsapp-rust": {
+      "stars": 1102,
+      "lang": "Rust"
+    }
+  }
+}
