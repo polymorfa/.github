@@ -2,11 +2,19 @@
   "polymorfa": {
     "sdks": {
       "stars": 0,
-      "lang": "TypeScript"
+      "lang": "TypeScript",
+      "langs": [
+        "TypeScript",
+        "Python",
+        "Rust",
+        "C#",
+        "PHP",
+        "Go"
+      ]
     },
     "cli": {
       "stars": 1,
-      "lang": "TypeScript"
+      "lang": "Shell"
     },
     "integrations": {
       "stars": 0,
@@ -19,10 +27,6 @@
     "agent-kit": {
       "stars": 0,
       "lang": "Python"
-    },
-    "sdk-php": {
-      "stars": 0,
-      "lang": "PHP"
     },
     "hypermeow": {
       "stars": 78,
@@ -55,7 +59,7 @@
       "lang": "JavaScript"
     },
     "whatsmeow": {
-      "stars": 7883,
+      "stars": 7884,
       "lang": "Go"
     },
     "whatsapp-rust": {

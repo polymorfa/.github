@@ -36,7 +36,6 @@ const BUILD = [
   ['integrations', 'Polymorfa apps for n8n, Make, Zapier and Pipedream.', 'Apps for n8n, Make, Zapier and Pipedream'],
   ['signal-node', 'Self-hosted Signal service. Keys and message plaintext stay on your servers.', 'Self-hosted Signal service: keys and plaintext stay on your servers'],
   ['agent-kit', 'Skills and a docs MCP for Claude Code, Codex, Gemini CLI and Cursor.', 'Skills and a docs MCP for coding agents'],
-  ['sdk-php', 'Composer distribution of the PHP SDK.', 'Composer distribution of the PHP SDK'],
 ]
 const OSS = [
   ['hypermeow', 'whatsmeow for scale: 79% lower group send p95 and 98% fewer SQL calls.', 'whatsmeow for scale: 79% lower group send p95, 98% fewer SQL calls'],
@@ -46,9 +45,16 @@ const OSS = [
   ['libsignal-protocol-go', 'Go implementation of the Signal protocol for WhatsApp.', 'Go Signal protocol for WhatsApp'],
 ]
 const S = Object.fromEntries([...BUILD, ...OSS].map(([n]) => [n, gh(`polymorfa/${n}`)]))
-/* GitHub reports no language for these repositories, so name it here. */
-const LANGUAGE = { 'signal-node': 'Rust' }
+/* Languages to show where GitHub's primary language misdescribes the repository. */
+const LANGUAGE = { 'signal-node': 'Rust', cli: 'Shell' }
 for (const [n, l] of Object.entries(LANGUAGE)) S[n].lang = l
+/* Repositories that show every language above 5% of their code, largest first. */
+const ALL_LANGUAGES = ['sdks']
+for (const n of ALL_LANGUAGES) {
+  const bytes = JSON.parse(execFileSync('gh', ['api', `repos/polymorfa/${n}/languages`]))
+  const total = Object.values(bytes).reduce((a, b) => a + b, 0)
+  S[n].langs = Object.entries(bytes).filter(([, b]) => b / total >= 0.05).map(([l]) => l)
+}
 const LIBS_ALL = [['Baileys', gh('WhiskeySockets/Baileys')], ['whatsapp-web.js', gh('wwebjs/whatsapp-web.js')], ['whatsmeow', gh('tulir/whatsmeow')], ['whatsapp-rust', gh('oxidezap/whatsapp-rust')]]
 const LIBS = LIBS_ALL
 
@@ -57,7 +63,7 @@ const TOKENS = {
   light: { bg: '#ffffff', fg: '#0a0a0a', muted: '#737373', border: '#e5e5e5', subtle: '#fafafa', amber: '#f59e0b', lock: 'lockup-light.svg' },
   dark: { bg: '#0a0a0a', fg: '#fafafa', muted: '#a1a1a1', border: '#262626', subtle: '#111111', amber: '#fbbf24', lock: 'lockup-dark.svg' },
 }
-const LANG = { Go: '#00ADD8', Rust: '#dea584', TypeScript: '#3178c6', JavaScript: '#f1e05a', Python: '#3572A5', PHP: '#4F5D95' }
+const LANG = { Go: '#00ADD8', Rust: '#dea584', TypeScript: '#3178c6', JavaScript: '#f1e05a', Python: '#3572A5', PHP: '#4F5D95', 'C#': '#178600', Shell: '#89e051' }
 
 /* ── Helpers ────────────────────────────────────────────────────────── */
 function h(type, style = {}, ...children) {
@@ -88,8 +94,8 @@ async function render(node, w, hh, title) {
 }
 
 const G = 5
-/* Open-source repositories shown two to a row, above the rest. */
-const FEATURED = ['hypermeow', 'cellar']
+/* Repositories shown two to a row at the top of their section. */
+const FEATURED = ['sdks', 'cli', 'hypermeow', 'cellar']
 /* Star counts appear only above this, so new repositories don't show a 0 or 1. */
 const MIN_STARS = 10
 const star = (V, t, size = 13) => (V.mono ? icon('star', t.muted, size) : icon('star', t.amber, size, 1.5, t.amber))
@@ -133,7 +139,7 @@ async function label(V, t, text, right) {
 
 function meta(V, t, s, size = 12) {
   return h('div', { alignItems: 'center', gap: 12, fontSize: size, color: t.muted },
-    s.lang && h('div', { alignItems: 'center', gap: 6 }, langDot(V, t, s.lang), s.lang),
+    ...(s.langs ?? (s.lang ? [s.lang] : [])).map((l) => h('div', { alignItems: 'center', gap: 6 }, langDot(V, t, l), l)),
     s.stars > MIN_STARS && h('div', { alignItems: 'center', gap: 5 }, star(V, t, 12), h('div', { fontFamily: 'Geist Mono' }, fmt(s.stars))))
 }
 
@@ -188,7 +194,7 @@ ${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SU
 <p align="center"><a href="https://www.polymorfa.com">Website</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com">Docs</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com/changelog">Changelog</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://www.polymorfa.com/pricing">Pricing</a></p>
 
 ${pic('s-build', '100%', null, 'Build with Polymorfa')}
-${BUILD.map(card).join('')}
+${[...BUILD.filter(([n]) => FEATURED.includes(n)), ...BUILD.filter(([n]) => !FEATURED.includes(n))].map(card).join('')}
 
 ${pic('s-oss', '100%', null, 'Open source')}
 ${oss.map(card).join('')}
