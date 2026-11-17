@@ -196,7 +196,7 @@ ${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SU
 ${pic('s-build', '100%', null, 'Build with Polymorfa')}
 ${[...BUILD.filter(([n]) => FEATURED.includes(n)), ...BUILD.filter(([n]) => !FEATURED.includes(n))].map(card).join('')}
 
-${pic('s-oss', '100%', null, 'Open source')}
+${pic('s-oss', '100%', null, 'Open-source tools and libraries')}
 ${oss.map(card).join('')}
 
 ${pic('more', '100%', ALL, 'More from Polymorfa. Browse every repository; this page is curated and can fall behind.')}
@@ -211,7 +211,7 @@ for (const mode of ['light', 'dark']) {
   const w = (n, svg) => writeFileSync(path.join(cards, `${n}-${mode}.svg`), svg)
   w('header', await header(V, t))
   w('s-build', await label(V, t, 'Build with Polymorfa', `${BUILD.length} repositories`))
-  w('s-oss', await label(V, t, 'Open source', `${OSS.length} repositories`))
+  w('s-oss', await label(V, t, 'Open-source tools and libraries', `${OSS.length} repositories`))
   for (const r of [...BUILD, ...OSS]) w(r[0], await repoCard(V, t, r))
   w('more', await more(V, t))
 }
