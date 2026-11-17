@@ -9,6 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import satori from 'satori'
 
 const HERE = path.dirname(new URL(import.meta.url).pathname)
@@ -94,8 +95,8 @@ async function render(node, w, hh, title) {
 }
 
 const G = 5
-/* Repositories shown two to a row at the top of their section. */
-const FEATURED = ['sdks', 'cli', 'hypermeow', 'cellar']
+/* Repositories shown two to a row. In Build they close the section; in open source they lead it. */
+const FEATURED = ['signal-node', 'agent-kit', 'hypermeow', 'cellar']
 /* Star counts appear only above this, so new repositories don't show a 0 or 1. */
 const MIN_STARS = 10
 const star = (V, t, size = 13) => (V.mono ? icon('star', t.muted, size) : icon('star', t.amber, size, 1.5, t.amber))
@@ -134,12 +135,14 @@ async function label(V, t, text, right) {
   return render(h('div', { width: W, height: H, alignItems: 'center', gap: 12, padding: '0 10px', fontFamily: 'Geist' },
     h('div', { fontSize: 13, fontWeight: 500, color: t.fg, whiteSpace: 'nowrap' }, text),
     h('div', { flexGrow: 1, height: 1, backgroundColor: t.border }),
-    h('div', { fontSize: 12.5, color: t.muted, whiteSpace: 'nowrap' }, right)), W, H, text)
+    right && h('div', { fontSize: 12.5, color: t.muted, whiteSpace: 'nowrap' }, right)), W, H, text)
 }
 
 function meta(V, t, s, size = 12) {
   return h('div', { alignItems: 'center', gap: 12, fontSize: size, color: t.muted },
-    ...(s.langs ?? (s.lang ? [s.lang] : [])).map((l) => h('div', { alignItems: 'center', gap: 6 }, langDot(V, t, l), l)),
+    ...(s.langs?.length > 2
+      ? [h('div', { alignItems: 'center', gap: 6 }, h('div', { gap: 3 }, s.langs.map((l) => langDot(V, t, l))), `${s.langs.length} languages`)]
+      : (s.langs ?? (s.lang ? [s.lang] : [])).map((l) => h('div', { alignItems: 'center', gap: 6 }, langDot(V, t, l), l))),
     s.stars > MIN_STARS && h('div', { alignItems: 'center', gap: 5 }, star(V, t, 12), h('div', { fontFamily: 'Geist Mono' }, fmt(s.stars))))
 }
 
@@ -162,27 +165,33 @@ async function repoCard(V, t, [name, desc, short]) {
       h('div', { marginTop: 'auto' }, meta(V, t, s)))), W, H, `polymorfa/${name}: ${desc}`)
 }
 
-async function more(V, t) {
-  const W = 900, H = 102
-  return render(h('div', { width: W, height: H, flexDirection: 'column', fontFamily: 'Geist' },
-    h('div', { height: 42, alignItems: 'center', gap: 12, padding: '0 10px' },
-      h('div', { fontSize: 13, fontWeight: 500, color: t.fg, whiteSpace: 'nowrap' }, 'More from Polymorfa'),
-      h('div', { flexGrow: 1, height: 1, backgroundColor: t.border })),
-    h('div', { height: 60, padding: G },
-      surface(t, { alignItems: 'center', justifyContent: 'space-between', padding: '0 18px', borderStyle: 'dashed' },
-        h('div', { alignItems: 'center', gap: 10, fontSize: 13.5, color: t.fg },
-          icon('folder-git-2', t.muted, 16), 'Browse every repository',
-          h('div', { color: t.muted }, 'This page is curated and can fall behind.')),
-        h('div', { alignItems: 'center', gap: 6, fontFamily: 'Geist Mono', fontSize: 12.5, color: t.fg }, 'github.com/orgs/polymorfa/repositories', icon('arrow-up-right', t.muted, 14))))),
-    W, H, 'More from Polymorfa. Browse every repository; this page is curated and can fall behind.')
+/* Polymorfa calls to action, from the polymorfa.com home page. */
+const CTAS = [
+  ['start', 'Start building', 'Open the Console and create your first project.', 'polymorfa.com/console', 'https://www.polymorfa.com/console', 'arrow-up-right'],
+  ['builders', 'Builders Program', '30 days building your WhatsApp product with the Polymorfa engineers.', 'polymorfa.com/builders', 'https://www.polymorfa.com/builders', 'users'],
+  ['story', 'Our story', 'How years of WhatsApp library work became Polymorfa.', 'polymorfa.com/company/story', 'https://www.polymorfa.com/company/story', 'book-open'],
+]
+async function cta(V, t, [, title, desc, url, , ic]) {
+  const W = 300, H = 128
+  return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
+    surface(t, { flexDirection: 'column', padding: '15px 16px' },
+      h('div', { alignItems: 'center', justifyContent: 'space-between' },
+        h('div', { fontSize: 14, fontWeight: 500, color: t.fg }, title), icon(ic, t.muted, 15)),
+      h('div', { marginTop: 7, fontSize: 12.5, lineHeight: 1.42, color: t.muted, lineClamp: 2, display: 'block' }, desc),
+      h('div', { marginTop: 'auto', fontFamily: 'Geist Mono', fontSize: 11.5, color: t.muted }, url))),
+    W, H, `${title}: ${desc} ${url}`)
 }
 
 /* ── README and output ─────────────────────────────────────────────── */
 const V = { layout: 'grid3' }
 const ALL = 'https://github.com/orgs/polymorfa/repositories'
+/* Each image URL carries a hash of its file, so GitHub's image cache never
+ * serves an old card after an update. Unchanged cards keep their URL. */
+const version = (file) => createHash('sha256').update(readFileSync(path.join(OUT, 'profile', file))).digest('hex').slice(0, 10)
 function readme(base) {
+  const src = (name, mode) => `${base}${name}-${mode}.svg?v=${version(`${base}${name}-${mode}.svg`)}`
   const pic = (name, width, href, alt) => {
-    const p = `<picture><source media="(prefers-color-scheme: dark)" srcset="${base}${name}-dark.svg"><img alt="${alt}" src="${base}${name}-light.svg" width="${width}"></picture>`
+    const p = `<picture><source media="(prefers-color-scheme: dark)" srcset="${src(name, 'dark')}"><img alt="${alt}" src="${src(name, 'light')}" width="${width}"></picture>`
     return href ? `<a href="${href}">${p}</a>` : p
   }
   const card = ([n, d]) => pic(n, FEATURED.includes(n) ? '50%' : '33.33%', `https://github.com/polymorfa/${n}`, `polymorfa/${n}: ${d}`)
@@ -194,12 +203,15 @@ ${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SU
 <p align="center"><a href="https://www.polymorfa.com">Website</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com">Docs</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com/changelog">Changelog</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://www.polymorfa.com/pricing">Pricing</a></p>
 
 ${pic('s-build', '100%', null, 'Build with Polymorfa')}
-${[...BUILD.filter(([n]) => FEATURED.includes(n)), ...BUILD.filter(([n]) => !FEATURED.includes(n))].map(card).join('')}
+${BUILD.map(card).join('')}
 
 ${pic('s-oss', '100%', null, 'Open-source tools and libraries')}
 ${oss.map(card).join('')}
 
-${pic('more', '100%', ALL, 'More from Polymorfa. Browse every repository; this page is curated and can fall behind.')}
+${pic('s-more', '100%', null, 'More from Polymorfa')}
+${CTAS.map((c) => pic(`cta-${c[0]}`, '33.33%', c[4], `${c[1]}: ${c[2]}`)).join('')}
+
+<p align="center"><sub>This list is curated and can fall behind. <a href="${ALL}">See every repository</a>.</sub></p>
 `
 }
 
@@ -213,7 +225,8 @@ for (const mode of ['light', 'dark']) {
   w('s-build', await label(V, t, 'Build with Polymorfa', `${BUILD.length} repositories`))
   w('s-oss', await label(V, t, 'Open-source tools and libraries', `${OSS.length} repositories`))
   for (const r of [...BUILD, ...OSS]) w(r[0], await repoCard(V, t, r))
-  w('more', await more(V, t))
+  w('s-more', await label(V, t, 'More from Polymorfa', ''))
+  for (const c of CTAS) w(`cta-${c[0]}`, await cta(V, t, c))
 }
 writeFileSync(path.join(OUT, 'profile', 'README.md'), readme('cards/'))
 writeFileSync(path.join(OUT, 'profile', 'stars.json'), JSON.stringify({ polymorfa: S, maintained: Object.fromEntries(LIBS) }, null, 2) + '\n')
