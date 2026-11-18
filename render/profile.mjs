@@ -87,11 +87,16 @@ function brand(file, width) {
   const [, w, hh] = s.match(/width="([\d.]+)" height="([\d.]+)"/)
   return img(svgUri(s), width, (width * Number(hh)) / Number(w))
 }
+/* Images carry their display size, so the README needs no width attributes
+ * and cards wrap on narrow screens. Everything draws at 92%: a 900-wide
+ * design shows at 828 px inside GitHub's 835 px desktop column, and a
+ * 300-wide card at 276 px inside its 292 px phone column. */
+const scale = 0.92
 async function render(node, w, hh, title) {
   const svg = (await satori(node, { width: w, height: hh, fonts: FONTS }))
     // One decimal is enough at display size and keeps each card small.
     .replace(/(\d+\.\d)\d+/g, '$1')
-  return svg.replace(/^<svg([^>]*)>/, `<svg$1 role="img" aria-label="${title.replace(/"/g, '&quot;')}"><title>${title.replace(/&/g, '&amp;')}</title>`)
+  return svg.replace(/^<svg width="[^"]*" height="[^"]*"([^>]*)>/, `<svg width="${Math.round(w * scale)}" height="${Math.round(hh * scale)}"$1 role="img" aria-label="${title.replace(/"/g, '&quot;')}"><title>${title.replace(/&/g, '&amp;')}</title>`)
 }
 
 const G = 5
@@ -114,12 +119,22 @@ function proofNode(V, t, { inline = false } = {}) {
       img(jpg('rajeh.jpg'), 30, 30, { borderRadius: 30, border: `2px solid ${t.bg}` }),
       img(jpg('joao.jpg'), 30, 30, { borderRadius: 30, border: `2px solid ${t.bg}`, marginLeft: -8 })),
     h('div', { fontSize: 13, color: t.muted, whiteSpace: 'nowrap', flexShrink: 0 }, 'Maintainers of'),
-    h('div', { gap: 4 }, LIBS.map(([n, s]) =>
-      h('div', { alignItems: 'center', gap: 5, flexShrink: 0, height: 28, padding: '0 9px', borderRadius: 99, border: `1px solid ${t.border}`, fontSize: 12, backgroundColor: t.bg },
-        h('div', { color: t.fg, fontWeight: 500 }, n), star(V, t, 12), h('div', { fontFamily: 'Geist Mono', fontSize: 11.5, color: t.muted }, kfmt(s.stars))))))
+    h('div', { gap: 4 }, LIBS.map((l) => libChip(V, t, l))))
 }
 
-async function header(V, t) {
+/* Narrow versions are 300 wide and serve viewports up to NARROW_MAX. */
+const NARROW_W = 300
+const NARROW_MAX = 1011
+
+async function header(V, t, narrow) {
+  if (narrow) {
+    const W = NARROW_W, H = 128
+    return render(h('div', { width: W, height: H, flexDirection: 'column', justifyContent: 'center', padding: '0 8px', fontFamily: 'Geist', color: t.fg },
+      brand(t.lock, 170),
+      h('div', { marginTop: 14, fontSize: 15, fontWeight: 500 }, TAGLINE),
+      h('div', { marginTop: 4, width: W - 16, fontSize: 12.5, lineHeight: 1.4, color: t.muted }, SUBLINE)),
+      W, H, `Polymorfa. ${TAGLINE} ${SUBLINE}`)
+  }
   const W = 900, H = 96
   return render(h('div', { width: W, height: H, padding: '0 10px', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Geist', color: t.fg },
     brand(t.lock, 230),
@@ -128,18 +143,41 @@ async function header(V, t) {
 }
 
 /* The maintainers proof. It links to the company story page. */
-async function proof(V, t) {
+function libChip(V, t, [n, s]) {
+  return h('div', { alignItems: 'center', gap: 5, flexShrink: 0, height: 28, padding: '0 9px', borderRadius: 99, border: `1px solid ${t.border}`, fontSize: 12, backgroundColor: t.bg },
+    h('div', { color: t.fg, fontWeight: 500 }, n), star(V, t, 12), h('div', { fontFamily: 'Geist Mono', fontSize: 11.5, color: t.muted }, kfmt(s.stars)))
+}
+
+async function proof(V, t, narrow) {
+  const title = `Maintainers of ${LIBS.map(([n, s]) => `${n} (${fmt(s.stars)} stars)`).join(', ')}. Read our story.`
+  const story = h('div', { alignItems: 'center', gap: 4, fontSize: 12.5, color: t.fg, whiteSpace: 'nowrap', flexShrink: 0 }, 'Our story', icon('arrow-up-right', t.muted, 13))
+  if (narrow) {
+    const W = NARROW_W, H = 126
+    return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
+      surface(t, { flexDirection: 'column', justifyContent: 'center', gap: 12, padding: '0 12px', backgroundColor: t.subtle },
+        h('div', { alignItems: 'center', justifyContent: 'space-between' },
+          h('div', { alignItems: 'center', gap: 10 },
+            h('div', { alignItems: 'center' },
+              img(jpg('rajeh.jpg'), 28, 28, { borderRadius: 28, border: `2px solid ${t.bg}` }),
+              img(jpg('joao.jpg'), 28, 28, { borderRadius: 28, border: `2px solid ${t.bg}`, marginLeft: -8 })),
+            h('div', { fontSize: 13, color: t.muted }, 'Maintainers of')),
+          story),
+        h('div', { flexWrap: 'wrap', rowGap: 8, width: W - 2 * G - 26 }, LIBS.map(([n, s], i) =>
+          h('div', { width: i % 2 ? W - 2 * G - 26 - 124 : 124, alignItems: 'center', gap: 4, fontSize: 11.5 },
+            h('div', { color: t.fg, fontWeight: 500, whiteSpace: 'nowrap' }, n), star(V, t, 11), h('div', { fontFamily: 'Geist Mono', fontSize: 10.5, color: t.muted }, kfmt(s.stars))))))),
+      W, H, title)
+  }
   const W = 900, H = 64
   return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
     surface(t, { alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', backgroundColor: t.subtle },
       proofNode(V, t),
-      h('div', { alignItems: 'center', gap: 4, fontSize: 12.5, color: t.fg, whiteSpace: 'nowrap', flexShrink: 0 }, 'Our story', icon('arrow-up-right', t.muted, 13)))),
-    W, H, `Maintainers of ${LIBS.map(([n, s]) => `${n} (${fmt(s.stars)} stars)`).join(', ')}. Read our story.`)
+      story)),
+    W, H, title)
 }
 
-async function label(V, t, text, right) {
-  const W = 900, H = 40
-  return render(h('div', { width: W, height: H, alignItems: 'center', gap: 12, padding: '0 10px', fontFamily: 'Geist' },
+async function label(V, t, text, right, narrow) {
+  const W = narrow ? NARROW_W : 900, H = 40
+  return render(h('div', { width: W, height: H, alignItems: 'center', gap: 12, padding: narrow ? '0 8px' : '0 10px', fontFamily: 'Geist' },
     h('div', { fontSize: 13, fontWeight: 500, color: t.fg, whiteSpace: 'nowrap' }, text),
     h('div', { flexGrow: 1, height: 1, backgroundColor: t.border }),
     right && h('div', { fontSize: 12.5, color: t.muted, whiteSpace: 'nowrap' }, right)), W, H, text)
@@ -153,7 +191,7 @@ function meta(V, t, s, size = 12) {
     s.stars > MIN_STARS && h('div', { alignItems: 'center', gap: 5 }, star(V, t, 12), h('div', { fontFamily: 'Geist Mono' }, fmt(s.stars))))
 }
 
-async function repoCard(V, t, [name, desc, short]) {
+async function repoCard(V, t, [name, desc, short], narrow) {
   const s = S[name]
   if (V.layout === 'rows') {
     const W = 900, H = 50
@@ -163,7 +201,7 @@ async function repoCard(V, t, [name, desc, short]) {
         h('div', { flexGrow: 1, fontSize: 13, color: t.muted, whiteSpace: 'nowrap' }, short),
         h('div', { width: 150, justifyContent: 'flex-end' }, meta(V, t, s)))), W, H, `polymorfa/${name}: ${desc}`)
   }
-  const W = FEATURED.includes(name) ? 450 : 300
+  const W = FEATURED.includes(name) && !narrow ? 450 : 300
   const H = 128
   return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
     surface(t, { flexDirection: 'column', padding: '15px 16px' },
@@ -177,13 +215,13 @@ const CTAS = [
   ['start', 'Start building', 'Open the Console and create your first project.', 'polymorfa.com/console', 'https://www.polymorfa.com/console', 'arrow-up-right'],
   ['builders', 'Builders Program', 'Build your WhatsApp product with the Polymorfa engineers for 30 days, free. Weekly calls and your own Slack channel.', 'polymorfa.com/builders', 'https://www.polymorfa.com/builders', 'users'],
 ]
-async function cta(V, t, [, title, desc, url, , ic]) {
-  const W = 450, H = 128
+async function cta(V, t, [, title, desc, url, , ic], narrow) {
+  const W = narrow ? 300 : 450, H = narrow ? 146 : 128
   return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
     surface(t, { flexDirection: 'column', padding: '15px 16px' },
       h('div', { alignItems: 'center', justifyContent: 'space-between' },
         h('div', { fontSize: 14, fontWeight: 500, color: t.fg }, title), icon(ic, t.muted, 15)),
-      h('div', { marginTop: 7, fontSize: 12.5, lineHeight: 1.42, color: t.muted, lineClamp: 2, display: 'block' }, desc),
+      h('div', { marginTop: 7, fontSize: 12.5, lineHeight: 1.42, color: t.muted, lineClamp: narrow ? 3 : 2, display: 'block' }, desc),
       h('div', { marginTop: 'auto', fontFamily: 'Geist Mono', fontSize: 11.5, color: t.muted }, url))),
     W, H, `${title}: ${desc} ${url}`)
 }
@@ -195,27 +233,49 @@ const V = { layout: 'grid3' }
 const version = (file) => createHash('sha256').update(readFileSync(path.join(OUT, 'profile', file))).digest('hex').slice(0, 10)
 function readme(base) {
   const src = (name, mode) => `${base}${name}-${mode}.svg?v=${version(`${base}${name}-${mode}.svg`)}`
-  const pic = (name, width, href, alt) => {
-    const p = `<picture><source media="(prefers-color-scheme: dark)" srcset="${src(name, 'dark')}"><img alt="${alt}" src="${src(name, 'light')}" width="${width}"></picture>`
+  /* Light and dark, plus 300-wide versions for screens up to NARROW_MAX
+   * when the wide layout would be too small to read. */
+  const pic = (name, href, alt, narrow = false) => {
+    const n = `(max-width: ${NARROW_MAX}px)`
+    const sources = [
+      narrow && `<source media="${n} and (prefers-color-scheme: dark)" srcset="${src(`${name}-narrow`, 'dark')}">`,
+      narrow && `<source media="${n}" srcset="${src(`${name}-narrow`, 'light')}">`,
+      `<source media="(prefers-color-scheme: dark)" srcset="${src(name, 'dark')}">`,
+    ].filter(Boolean).join('')
+    const p = `<picture>${sources}<img alt="${alt}" src="${src(name, 'light')}"></picture>`
     return href ? `<a href="${href}">${p}</a>` : p
   }
-  const card = ([n, d]) => pic(n, FEATURED.includes(n) ? '50%' : '33.33%', `https://github.com/polymorfa/${n}`, `polymorfa/${n}: ${d}`)
+  const card = ([n, d]) => pic(n, `https://github.com/polymorfa/${n}`, `polymorfa/${n}: ${d}`, FEATURED.includes(n))
+  /* Rows are explicit, so a wide screen never pulls a card up a row; on a
+   * narrow screen each card wraps onto its own line. */
+  const rows = (list) => {
+    const out = []
+    let i = 0
+    while (i < list.length) {
+      const wide = FEATURED.includes(list[i][0])
+      const size = wide ? 2 : 3
+      const row = []
+      while (i < list.length && row.length < size && FEATURED.includes(list[i][0]) === wide) row.push(list[i++])
+      out.push(row.map(card).join(''))
+    }
+    return out.join('<br>')
+  }
   const oss = [...OSS.filter(([n]) => FEATURED.includes(n)), ...OSS.filter(([n]) => !FEATURED.includes(n))]
   return `<!-- Generated by render/profile.mjs. Edit the script, not this file; a daily workflow regenerates it. -->
 
-${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SUBLINE}`)}
-${pic('proof', '100%', 'https://www.polymorfa.com/company/story', 'Maintainers of Baileys, whatsapp-web.js, whatsmeow and whatsapp-rust. Read our story.')}
+${pic('header', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SUBLINE}`, true)}
+${pic('proof', 'https://www.polymorfa.com/company/story', 'Maintainers of Baileys, whatsapp-web.js, whatsmeow and whatsapp-rust. Read our story.', true)}
 
-<p align="center"><a href="https://www.polymorfa.com">Website</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com">Docs</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com/changelog">Changelog</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://www.polymorfa.com/pricing">Pricing</a></p>
+<p align="center"><a href="https://www.polymorfa.com">Website</a> · <a href="https://docs.polymorfa.com">Docs</a> · <a href="https://docs.polymorfa.com/changelog">Changelog</a> · <a href="https://www.polymorfa.com/pricing">Pricing</a></p>
 
-${pic('s-build', '100%', null, 'Build with Polymorfa')}
-${BUILD.map(card).join('')}
+${pic('s-build', null, 'Build with Polymorfa', true)}
+${rows(BUILD)}
 
-${pic('s-oss', '100%', null, 'Open-source tools and libraries')}
-${oss.map(card).join('')}
+${pic('s-oss', null, 'Open-source tools and libraries', true)}
+${rows(oss)}
 
-${pic('s-more', '100%', null, 'More from Polymorfa')}
-${CTAS.map((c) => pic(`cta-${c[0]}`, '50%', c[4], `${c[1]}: ${c[2]}`)).join('')}
+${pic('s-more', null, 'More from Polymorfa', true)}
+${CTAS.map((c) => pic(`cta-${c[0]}`, c[4], `${c[1]}: ${c[2]}`, true)).join('')}
 `
 }
 
@@ -225,13 +285,16 @@ mkdirSync(cards, { recursive: true })
 for (const mode of ['light', 'dark']) {
   const t = TOKENS[mode]
   const w = (n, svg) => writeFileSync(path.join(cards, `${n}-${mode}.svg`), svg)
-  w('header', await header(V, t))
-  w('proof', await proof(V, t))
-  w('s-build', await label(V, t, 'Build with Polymorfa', `${BUILD.length} repositories`))
-  w('s-oss', await label(V, t, 'Open-source tools and libraries', `${OSS.length} repositories`))
-  for (const r of [...BUILD, ...OSS]) w(r[0], await repoCard(V, t, r))
-  w('s-more', await label(V, t, 'More from Polymorfa', ''))
-  for (const c of CTAS) w(`cta-${c[0]}`, await cta(V, t, c))
+  for (const narrow of [false, true]) {
+    const x = narrow ? '-narrow' : ''
+    w(`header${x}`, await header(V, t, narrow))
+    w(`proof${x}`, await proof(V, t, narrow))
+    w(`s-build${x}`, await label(V, t, 'Build with Polymorfa', `${BUILD.length} repositories`, narrow))
+    w(`s-oss${x}`, await label(V, t, 'Open-source tools and libraries', `${OSS.length} repositories`, narrow))
+    w(`s-more${x}`, await label(V, t, 'More from Polymorfa', '', narrow))
+    for (const c of CTAS) w(`cta-${c[0]}${x}`, await cta(V, t, c, narrow))
+    for (const r of [...BUILD, ...OSS]) if (!narrow || FEATURED.includes(r[0])) w(`${r[0]}${x}`, await repoCard(V, t, r, narrow))
+  }
 }
 writeFileSync(path.join(OUT, 'profile', 'README.md'), readme('cards/'))
 writeFileSync(path.join(OUT, 'profile', 'stars.json'), JSON.stringify({ polymorfa: S, maintained: Object.fromEntries(LIBS) }, null, 2) + '\n')
