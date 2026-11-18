@@ -231,8 +231,12 @@ const V = { layout: 'grid3' }
 /* Each image URL carries a hash of its file, so GitHub's image cache never
  * serves an old card after an update. Unchanged cards keep their URL. */
 const version = (file) => createHash('sha256').update(readFileSync(path.join(OUT, 'profile', file))).digest('hex').slice(0, 10)
+/* Absolute URLs: GitHub's website rewrites relative image paths, but the API
+ * returns them unresolved, and the GitHub mobile app then fails to load
+ * them. raw.githubusercontent.com serves the SVGs as image/svg+xml. */
+const RAW = 'https://raw.githubusercontent.com/polymorfa/.github/main/profile/'
 function readme(base) {
-  const src = (name, mode) => `${base}${name}-${mode}.svg?v=${version(`${base}${name}-${mode}.svg`)}`
+  const src = (name, mode) => `${RAW}${base}${name}-${mode}.svg?v=${version(`${base}${name}-${mode}.svg`)}`
   /* Light and dark, plus 300-wide versions for screens up to NARROW_MAX
    * when the wide layout would be too small to read. */
   const pic = (name, href, alt, narrow = false) => {
