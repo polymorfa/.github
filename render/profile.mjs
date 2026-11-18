@@ -106,7 +106,7 @@ const surface = (t, style, ...k) => h('div', { width: '100%', height: '100%', ba
 
 /* ── Pieces ─────────────────────────────────────────────────────────── */
 const TAGLINE = 'The platform for building on WhatsApp.'
-const SUBLINE = 'Public SDKs, tools and libraries from the Polymorfa team.'
+const SUBLINE = "Home of Polymorfa's open-source SDKs, tools and libraries."
 
 function proofNode(V, t, { inline = false } = {}) {
   return h('div', { alignItems: 'center', gap: 12, flexWrap: 'nowrap' },
