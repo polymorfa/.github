@@ -113,21 +113,28 @@ function proofNode(V, t, { inline = false } = {}) {
     h('div', { alignItems: 'center' },
       img(jpg('rajeh.jpg'), 30, 30, { borderRadius: 30, border: `2px solid ${t.bg}` }),
       img(jpg('joao.jpg'), 30, 30, { borderRadius: 30, border: `2px solid ${t.bg}`, marginLeft: -8 })),
-    h('div', { fontSize: 13, color: t.muted, whiteSpace: 'nowrap', flexShrink: 0 }, 'From the maintainers of'),
-    h('div', { gap: 5 }, LIBS.map(([n, s]) =>
-      h('div', { alignItems: 'center', gap: 5, flexShrink: 0, height: 28, padding: '0 10px', borderRadius: 99, border: `1px solid ${t.border}`, fontSize: 12, backgroundColor: t.bg },
+    h('div', { fontSize: 13, color: t.muted, whiteSpace: 'nowrap', flexShrink: 0 }, 'Maintainers of'),
+    h('div', { gap: 4 }, LIBS.map(([n, s]) =>
+      h('div', { alignItems: 'center', gap: 5, flexShrink: 0, height: 28, padding: '0 9px', borderRadius: 99, border: `1px solid ${t.border}`, fontSize: 12, backgroundColor: t.bg },
         h('div', { color: t.fg, fontWeight: 500 }, n), star(V, t, 12), h('div', { fontFamily: 'Geist Mono', fontSize: 11.5, color: t.muted }, kfmt(s.stars))))))
 }
 
 async function header(V, t) {
-  const W = 900, H = 160
-  return render(h('div', { width: W, height: H, flexDirection: 'column', fontFamily: 'Geist', color: t.fg },
-    h('div', { height: 96, padding: '0 10px', alignItems: 'center', justifyContent: 'space-between' },
-      brand(t.lock, 230),
-      h('div', { flexDirection: 'column', alignItems: 'flex-end', gap: 5 }, h('div', { fontSize: 17, fontWeight: 500 }, TAGLINE), h('div', { fontSize: 14, color: t.muted }, SUBLINE))),
-    h('div', { height: 64, padding: G },
-      surface(t, { alignItems: 'center', padding: '0 18px', backgroundColor: t.subtle }, proofNode(V, t)))),
-    W, H, `Polymorfa. ${TAGLINE} ${SUBLINE} From the maintainers of ${LIBS.map(([n, s]) => `${n} (${fmt(s.stars)} stars)`).join(', ')}.`)
+  const W = 900, H = 96
+  return render(h('div', { width: W, height: H, padding: '0 10px', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Geist', color: t.fg },
+    brand(t.lock, 230),
+    h('div', { flexDirection: 'column', alignItems: 'flex-end', gap: 5 }, h('div', { fontSize: 17, fontWeight: 500 }, TAGLINE), h('div', { fontSize: 14, color: t.muted }, SUBLINE))),
+    W, H, `Polymorfa. ${TAGLINE} ${SUBLINE}`)
+}
+
+/* The maintainers proof. It links to the company story page. */
+async function proof(V, t) {
+  const W = 900, H = 64
+  return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
+    surface(t, { alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', backgroundColor: t.subtle },
+      proofNode(V, t),
+      h('div', { alignItems: 'center', gap: 4, fontSize: 12.5, color: t.fg, whiteSpace: 'nowrap', flexShrink: 0 }, 'Our story', icon('arrow-up-right', t.muted, 13)))),
+    W, H, `Maintainers of ${LIBS.map(([n, s]) => `${n} (${fmt(s.stars)} stars)`).join(', ')}. Read our story.`)
 }
 
 async function label(V, t, text, right) {
@@ -168,11 +175,10 @@ async function repoCard(V, t, [name, desc, short]) {
 /* Polymorfa calls to action, from the polymorfa.com home page. */
 const CTAS = [
   ['start', 'Start building', 'Open the Console and create your first project.', 'polymorfa.com/console', 'https://www.polymorfa.com/console', 'arrow-up-right'],
-  ['builders', 'Builders Program', '30 days building your WhatsApp product with the Polymorfa engineers.', 'polymorfa.com/builders', 'https://www.polymorfa.com/builders', 'users'],
-  ['story', 'Our story', 'How years of WhatsApp library work became Polymorfa.', 'polymorfa.com/company/story', 'https://www.polymorfa.com/company/story', 'book-open'],
+  ['builders', 'Builders Program', 'Build your WhatsApp product with the Polymorfa engineers for 30 days, free. Weekly calls and your own Slack channel.', 'polymorfa.com/builders', 'https://www.polymorfa.com/builders', 'users'],
 ]
 async function cta(V, t, [, title, desc, url, , ic]) {
-  const W = 300, H = 128
+  const W = 450, H = 128
   return render(h('div', { width: W, height: H, padding: G, fontFamily: 'Geist' },
     surface(t, { flexDirection: 'column', padding: '15px 16px' },
       h('div', { alignItems: 'center', justifyContent: 'space-between' },
@@ -184,7 +190,6 @@ async function cta(V, t, [, title, desc, url, , ic]) {
 
 /* ── README and output ─────────────────────────────────────────────── */
 const V = { layout: 'grid3' }
-const ALL = 'https://github.com/orgs/polymorfa/repositories'
 /* Each image URL carries a hash of its file, so GitHub's image cache never
  * serves an old card after an update. Unchanged cards keep their URL. */
 const version = (file) => createHash('sha256').update(readFileSync(path.join(OUT, 'profile', file))).digest('hex').slice(0, 10)
@@ -198,7 +203,8 @@ function readme(base) {
   const oss = [...OSS.filter(([n]) => FEATURED.includes(n)), ...OSS.filter(([n]) => !FEATURED.includes(n))]
   return `<!-- Generated by render/profile.mjs. Edit the script, not this file; a daily workflow regenerates it. -->
 
-${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SUBLINE} From the maintainers of Baileys, whatsapp-web.js, whatsmeow and whatsapp-rust.`)}
+${pic('header', '100%', 'https://www.polymorfa.com', `Polymorfa. ${TAGLINE} ${SUBLINE}`)}
+${pic('proof', '100%', 'https://www.polymorfa.com/company/story', 'Maintainers of Baileys, whatsapp-web.js, whatsmeow and whatsapp-rust. Read our story.')}
 
 <p align="center"><a href="https://www.polymorfa.com">Website</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com">Docs</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://docs.polymorfa.com/changelog">Changelog</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://www.polymorfa.com/pricing">Pricing</a></p>
 
@@ -209,9 +215,7 @@ ${pic('s-oss', '100%', null, 'Open-source tools and libraries')}
 ${oss.map(card).join('')}
 
 ${pic('s-more', '100%', null, 'More from Polymorfa')}
-${CTAS.map((c) => pic(`cta-${c[0]}`, '33.33%', c[4], `${c[1]}: ${c[2]}`)).join('')}
-
-<p align="center"><sub>This list is curated and can fall behind. <a href="${ALL}">See every repository</a>.</sub></p>
+${CTAS.map((c) => pic(`cta-${c[0]}`, '50%', c[4], `${c[1]}: ${c[2]}`)).join('')}
 `
 }
 
@@ -222,6 +226,7 @@ for (const mode of ['light', 'dark']) {
   const t = TOKENS[mode]
   const w = (n, svg) => writeFileSync(path.join(cards, `${n}-${mode}.svg`), svg)
   w('header', await header(V, t))
+  w('proof', await proof(V, t))
   w('s-build', await label(V, t, 'Build with Polymorfa', `${BUILD.length} repositories`))
   w('s-oss', await label(V, t, 'Open-source tools and libraries', `${OSS.length} repositories`))
   for (const r of [...BUILD, ...OSS]) w(r[0], await repoCard(V, t, r))
