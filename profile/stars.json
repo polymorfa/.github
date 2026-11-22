@@ -51,19 +51,19 @@
   },
   "maintained": {
     "Baileys": {
-      "stars": 11689,
+      "stars": 11696,
       "lang": "JavaScript"
     },
     "whatsapp-web.js": {
-      "stars": 22948,
+      "stars": 22951,
       "lang": "JavaScript"
     },
     "whatsmeow": {
-      "stars": 7915,
+      "stars": 7918,
       "lang": "Go"
     },
     "whatsapp-rust": {
-      "stars": 1116,
+      "stars": 1117,
       "lang": "Rust"
     }
   }
