@@ -29,7 +29,7 @@
       "lang": "Python"
     },
     "hypermeow": {
-      "stars": 78,
+      "stars": 79,
       "lang": "Go"
     },
     "cellar": {
@@ -51,19 +51,19 @@
   },
   "maintained": {
     "Baileys": {
-      "stars": 11716,
+      "stars": 11728,
       "lang": "JavaScript"
     },
     "whatsapp-web.js": {
-      "stars": 22957,
+      "stars": 22968,
       "lang": "JavaScript"
     },
     "whatsmeow": {
-      "stars": 7932,
+      "stars": 7940,
       "lang": "Go"
     },
     "whatsapp-rust": {
-      "stars": 1128,
+      "stars": 1131,
       "lang": "Rust"
     }
   }
